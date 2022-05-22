@@ -1,9 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/n0nnahs/polished-api/configs"
 
 	"github.com/gorilla/mux"
 )
@@ -11,11 +12,7 @@ import (
 func main() {
     router := mux.NewRouter()
 
-    router.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-        rw.Header().Set("Content-Type", "application/json")
+	configs.ConnectDB()
 
-        json.NewEncoder(rw).Encode(map[string]string{"data": "Hello from Mux & mongoDB"})
-    }).Methods("GET")
-
-    log.Fatal(http.ListenAndServe(":3000", router))
+	log.Fatal(http.ListenAndServe(":6000", router))
 }
