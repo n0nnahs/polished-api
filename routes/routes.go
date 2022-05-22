@@ -6,5 +6,8 @@ import (
 )
 
 func PolishRoute(router *mux.Router){
-    router.HandleFunc("/user", controllers.CreatePolish()).Methods("POST")
+	router.HandleFunc("/polish", controllers.CreatePolish()).Methods("POST")
+	router.HandleFunc("/polish/id/{polishId}", controllers.GetPolishId()).Methods("GET")
+	router.HandleFunc("/polish/{name}", controllers.GetPolishName()).Methods("GET")
+
 }

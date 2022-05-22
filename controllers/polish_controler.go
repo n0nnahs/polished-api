@@ -83,7 +83,7 @@ func CreatePolish() http.HandlerFunc {
 	}
 }
 
-func GetAPolishId() http.HandlerFunc {
+func GetPolishId() http.HandlerFunc {
     return func(rw http.ResponseWriter, r *http.Request) {
         ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
         params := mux.Vars(r)
@@ -114,7 +114,7 @@ func GetAPolishId() http.HandlerFunc {
     }
 }
 
-func GetAPolishName() http.HandlerFunc {
+func GetPolishName() http.HandlerFunc {
     return func(rw http.ResponseWriter, r *http.Request) {
         ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
         params := mux.Vars(r)
@@ -125,13 +125,14 @@ func GetAPolishName() http.HandlerFunc {
 
         err := polishCollection.FindOne(ctx, bson.M{"name": polishName}).Decode(&polish)
         if err != nil {
-            rw.WriteHeader(http.StatusInternalServerError)
-            response := responses.PolishResponse{
-			  Status: http.StatusInternalServerError, 
-			  Message: "error", 
-			  Data: map[string]interface{}{"data": err.Error()}}
-            json.NewEncoder(rw).Encode(response)
-            return
+          rw.WriteHeader(http.StatusInternalServerError)
+          response := responses.PolishResponse{
+			Status: http.StatusInternalServerError, 
+			Message: "error", 
+			Data: map[string]interface{}{"data": err.Error()}}
+		
+          json.NewEncoder(rw).Encode(response)
+          return
         }
 
         rw.WriteHeader(http.StatusOK)
@@ -139,6 +140,61 @@ func GetAPolishName() http.HandlerFunc {
 		   Status: http.StatusOK, 
 		   Message: "success", 
 		   Data: map[string]interface{}{"data": polish}}
+        json.NewEncoder(rw).Encode(response)
+    }
+}
+
+func EditPolish() http.HandlerFunc {
+    return func(rw http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        params := mux.Vars(r)
+        polishId := params["polishId"]
+        var polish models.Polish
+        defer cancel()
+
+        objId, _ := primitive.ObjectIDFromHex(polishId)
+
+        //validate the request body
+        if err := json.NewDecoder(r.Body).Decode(&polish); err != nil {
+            rw.WriteHeader(http.StatusBadRequest)
+            response := responses.PolishResponse{Status: http.StatusBadRequest, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        //use the validator library to validate required fields
+        if validationErr := validate.Struct(&polish); validationErr != nil {
+            rw.WriteHeader(http.StatusBadRequest)
+            response := responses.PolishResponse{Status: http.StatusBadRequest, Message: "error", Data: map[string]interface{}{"data": validationErr.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        update := bson.M{"name": polish.Name, "brand": polish.Brand, "collection": polish.Collection, "type": polish.Type, "color": polish.Color, "colorDescription": polish.ColorDescription, "purchaseDate": polish.PurchaseDate, "swatched": polish.Swatched}
+
+        result, err := polishCollection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": update})
+        if err != nil {
+            rw.WriteHeader(http.StatusInternalServerError)
+            response := responses.PolishResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        //get updated polish details
+        var updatedPolish models.Polish
+        if result.MatchedCount == 1 {
+            err := polishCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&updatedPolish)
+
+            if err != nil {
+                rw.WriteHeader(http.StatusInternalServerError)
+                response := responses.PolishResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+                json.NewEncoder(rw).Encode(response)
+                return
+            }
+        }
+
+        rw.WriteHeader(http.StatusOK)
+        response := responses.PolishResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": updatedPolish}}
         json.NewEncoder(rw).Encode(response)
     }
 }
