@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -82,7 +83,7 @@ func CreatePolish() http.HandlerFunc {
 	}
 }
 
-func GetAPolish() http.HandlerFunc {
+func GetAPolishId() http.HandlerFunc {
     return func(rw http.ResponseWriter, r *http.Request) {
         ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
         params := mux.Vars(r)
@@ -91,8 +92,38 @@ func GetAPolish() http.HandlerFunc {
         defer cancel()
 
         objId, _ := primitive.ObjectIDFromHex(polishId)
+	   fmt.Print(objId)
 
         err := polishCollection.FindOne(ctx, bson.M{"id": objId}).Decode(&polish)
+        if err != nil {
+            rw.WriteHeader(http.StatusInternalServerError)
+            response := responses.PolishResponse{
+			  Status: http.StatusInternalServerError, 
+			  Message: "error", 
+			  Data: map[string]interface{}{"data": err.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        rw.WriteHeader(http.StatusOK)
+        response := responses.PolishResponse{
+		   Status: http.StatusOK, 
+		   Message: "success", 
+		   Data: map[string]interface{}{"data": polish}}
+        json.NewEncoder(rw).Encode(response)
+    }
+}
+
+func GetAPolishName() http.HandlerFunc {
+    return func(rw http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        params := mux.Vars(r)
+	   polishName := params["name"]
+        var polish models.Polish
+        defer cancel()
+
+
+        err := polishCollection.FindOne(ctx, bson.M{"name": polishName}).Decode(&polish)
         if err != nil {
             rw.WriteHeader(http.StatusInternalServerError)
             response := responses.PolishResponse{
