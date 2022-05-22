@@ -198,3 +198,69 @@ func EditPolish() http.HandlerFunc {
         json.NewEncoder(rw).Encode(response)
     }
 }
+
+func DeletePolish() http.HandlerFunc {
+    return func(rw http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        params := mux.Vars(r)
+        polishId := params["polishId"]
+        defer cancel()
+        objId, _ := primitive.ObjectIDFromHex(polishId)
+
+        result, err := polishCollection.DeleteOne(ctx, bson.M{"id": objId})
+
+        if err != nil {
+            rw.WriteHeader(http.StatusInternalServerError)
+            response := responses.PolishResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        if result.DeletedCount < 1 {
+            rw.WriteHeader(http.StatusNotFound)
+            response := responses.PolishResponse{Status: http.StatusNotFound, Message: "error", Data: map[string]interface{}{"data": "Polish with specified ID not found!"}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        rw.WriteHeader(http.StatusOK)
+        response := responses.PolishResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": "Polish successfully deleted!"}}
+        json.NewEncoder(rw).Encode(response)
+    }
+
+    
+}
+
+func GetAllPolish() http.HandlerFunc {
+    return func(rw http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        var users []models.Polish
+        defer cancel()
+
+        results, err := polishCollection.Find(ctx, bson.M{})
+
+        if err != nil {
+            rw.WriteHeader(http.StatusInternalServerError)
+            response := responses.PolishResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+            json.NewEncoder(rw).Encode(response)
+            return
+        }
+
+        //reading from the db in an optimal way
+        defer results.Close(ctx)
+        for results.Next(ctx) {
+            var singleUser models.Polish
+            if err = results.Decode(&singleUser); err != nil {
+                rw.WriteHeader(http.StatusInternalServerError)
+                response := responses.PolishResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}}
+                json.NewEncoder(rw).Encode(response)
+            }
+
+            users = append(users, singleUser)
+        }
+
+        rw.WriteHeader(http.StatusOK)
+        response := responses.PolishResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": users}}
+        json.NewEncoder(rw).Encode(response)
+    }
+}
