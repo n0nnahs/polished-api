@@ -94,7 +94,7 @@ func GetAPolishId() http.HandlerFunc {
         objId, _ := primitive.ObjectIDFromHex(polishId)
 	   fmt.Print(objId)
 
-        err := polishCollection.FindOne(ctx, bson.M{"id": objId}).Decode(&polish)
+        err := polishCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&polish)
         if err != nil {
             rw.WriteHeader(http.StatusInternalServerError)
             response := responses.PolishResponse{
