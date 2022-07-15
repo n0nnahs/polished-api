@@ -11,11 +11,11 @@ import (
 )
 
 func main() {
-    router := mux.NewRouter()
+	router := mux.NewRouter()
 
 	configs.ConnectDB()
 
 	routes.PolishRoute(router)
 
-	log.Fatal(http.ListenAndServe(":6000", router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
